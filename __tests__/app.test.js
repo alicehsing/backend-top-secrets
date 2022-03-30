@@ -14,6 +14,7 @@ describe('backend-top-secrets routes', () => {
     pool.end();
   });
 
+  // POST { email, password } to /api/v1/users to create a new user
   it('creates a new user', async () => {
     const res = await request(app)
       .post('/api/v1/users')
@@ -24,8 +25,8 @@ describe('backend-top-secrets routes', () => {
       email: 'momothecow@momo.com' });
   });
 
-  it('logs in an existing user', async () => {
-  
+  // POST { email, password } to /api/v1/users as an signed-in user
+  it('signs in an existing user', async () => {
     const user = await UserService.create({
       email: 'momothecow@momo.com',
       password: 'iliketoeatgrass',
@@ -41,6 +42,7 @@ describe('backend-top-secrets routes', () => {
     });
   });
 
+  // DELETE signed in user from /api/v1/users/sessions 
   it('logs out a user via DELETE', async () => {
     const agent = request.agent(app);
     const user = await UserService.create({
@@ -64,6 +66,7 @@ describe('backend-top-secrets routes', () => {
     });
   });
 
+  // GET /api/v1/secrets so that signed in users can view a list of secrets
   it('should return a list of secrets if signed in as a user', async () => {
     const agent = request.agent(app);
     await UserService.create({
@@ -77,13 +80,15 @@ describe('backend-top-secrets routes', () => {
     // should get an "unauthenticated" 401 status
     expect(res.status).toEqual(401);
 
-    // Authenticate a user that is authenticated
+    // Authenticate an authenticated user
     await agent
       .post('/api/v1/users/sessions')
       .send({ 
         email: 'momothecow@momo.com',
         password: 'iliketoeatgrass'
       });
+    
+    // GET /api/v1/secrets to return a list of secrets
     res = await agent.get('/api/v1/secrets');
 
     // expect to return a secret for a sign in user  
