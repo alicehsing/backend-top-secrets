@@ -4,8 +4,29 @@ const request = require('supertest');
 const app = require('../lib/app');
 const UserService = require('../lib/services/UserService');
 
-// create an "agent" to give us the ability to store cookies between requests
-const agent = request.agent(app);
+
+// Dummy user for testing
+const dummyUser = {
+  email: 'momothecow@momo.com',
+  password: 'iliketoeatgrass',
+};
+
+const registerAndLogin = async (userProps = {}) => {
+  const password = userProps.password ?? dummyUser.password;
+
+  // create an "agent" to give us the ability to store cookies between requests
+  const agent = request.agent(app);
+
+  // create a user to sign in with
+  const user = await UserService.create({ ...dummyUser, ...userProps });
+
+  // ...then sign in
+  const { email } = user;
+  await agent
+    .post('/api/v1/users/sessions')
+    .send({ email, password });
+  return [agent, user];
+};
 
 describe('backend-top-secrets routes', () => {
   beforeEach(() => {
@@ -16,7 +37,7 @@ describe('backend-top-secrets routes', () => {
     pool.end();
   });
 
-  it('registers a user via POST', async () => {
+  it('creates a new user', async () => {
     const res = await request(app)
       .post('/api/v1/users')
       .send({ email: 'momothecow@momo.com', password: 'iliketoeatgrass' });
@@ -43,16 +64,30 @@ describe('backend-top-secrets routes', () => {
   });
 
   it('logs out a user via DELETE', async () => {
+    const agent = request.agent(app);
+    const user = await UserService.create({
+      email: 'momothecow@momo.com',
+      password: 'iliketoeatgrass',
+    });
 
-    const res = await agent.delete('/api/v1/users/sessions');
+    const res = await request(app)
+      .post('/api/v1/users/sessions')
+      .send({ email: 'momothecow@momo.com', password: 'iliketoeatgrass' });
 
     expect(res.body).toEqual({ 
+      message: 'You have signed in successfully!',
+      user,
+    });
+    const res2 = await agent.delete('/api/v1/users/sessions');
+
+    expect(res2.body).toEqual({ 
       success: true,
       message: 'You are logged out successfully!'
     });
   });
 
-  it('allows logged in users to view secrets by visiting /api/v1/secrets', async () => {
+  it('should return a list of secrets if signed in as a user', async () => {
+    const agent = request.agent(app);
     await UserService.create({
       email: 'momothecow@momo.com',
       password: 'iliketoeatgrass',
