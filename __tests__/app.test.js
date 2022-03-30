@@ -5,29 +5,6 @@ const app = require('../lib/app');
 const UserService = require('../lib/services/UserService');
 
 
-// Dummy user for testing
-const dummyUser = {
-  email: 'momothecow@momo.com',
-  password: 'iliketoeatgrass',
-};
-
-const registerAndLogin = async (userProps = {}) => {
-  const password = userProps.password ?? dummyUser.password;
-
-  // create an "agent" to give us the ability to store cookies between requests
-  const agent = request.agent(app);
-
-  // create a user to sign in with
-  const user = await UserService.create({ ...dummyUser, ...userProps });
-
-  // ...then sign in
-  const { email } = user;
-  await agent
-    .post('/api/v1/users/sessions')
-    .send({ email, password });
-  return [agent, user];
-};
-
 describe('backend-top-secrets routes', () => {
   beforeEach(() => {
     return setup(pool);
@@ -48,6 +25,7 @@ describe('backend-top-secrets routes', () => {
   });
 
   it('logs in an existing user', async () => {
+  
     const user = await UserService.create({
       email: 'momothecow@momo.com',
       password: 'iliketoeatgrass',
@@ -99,7 +77,7 @@ describe('backend-top-secrets routes', () => {
     // should get an "unauthenticated" 401 status
     expect(res.status).toEqual(401);
 
-    // Authenticate a user that is authorized
+    // Authenticate a user that is authenticated
     await agent
       .post('/api/v1/users/sessions')
       .send({ 
@@ -107,7 +85,13 @@ describe('backend-top-secrets routes', () => {
         password: 'iliketoeatgrass'
       });
     res = await agent.get('/api/v1/secrets');
-    // should get a successful 200 response
-    expect(res.status).toEqual(200);
+
+    // expect to return a secret for a sign in user  
+    expect(res.body).toEqual([{
+      createdAt: expect.any(String),
+      description: 'Are you sure you want to know?',
+      id: expect.any(String),
+      title: 'Top Secrets'
+    }]);
   });
 });

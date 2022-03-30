@@ -19,4 +19,4 @@ CREATE TABLE secrets (
 );
 
 INSERT INTO secrets (title, description) 
-VALUES ('')
+VALUES ('Top Secrets', 'Are you sure you want to know?')
