@@ -51,4 +51,28 @@ describe('backend-top-secrets routes', () => {
       message: 'You are logged out successfully!'
     });
   });
+
+  it('allows logged in users to view secrets by visiting /api/v1/secrets', async () => {
+    await UserService.create({
+      email: 'momothecow@momo.com',
+      password: 'iliketoeatgrass',
+    });
+
+    // Test authentication for the endpoint
+    // No user signed in
+    let res = await agent.get('/api/v1/secrets');
+    // should get an "unauthenticated" 401 status
+    expect(res.status).toEqual(401);
+
+    // Authenticate a user that is authorized
+    await agent
+      .post('/api/v1/users/sessions')
+      .send({ 
+        email: 'momothecow@momo.com',
+        password: 'iliketoeatgrass'
+      });
+    res = await agent.get('/api/v1/secrets');
+    // should get a successful 200 response
+    expect(res.status).toEqual(200);
+  });
 });
